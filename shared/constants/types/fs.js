@@ -292,6 +292,13 @@ export type _MoveOrCopy = {
 }
 export type MoveOrCopy = I.RecordOf<_MoveOrCopy>
 
+export type _SendAttachmentToChat = {
+  filter: string,
+  path: Path,
+  convID: ChatTypes.ConversationIDKey,
+}
+export type SendAttachmentToChat = I.RecordOf<_SendAttachmentToChat>
+
 export type _SendLinkToChat = {
   path: Path,
   // This is the convID that we are sending into. So for group chats or small
@@ -327,6 +334,7 @@ export type _State = {
   moveOrCopy: MoveOrCopy,
   sendLinkToChat: SendLinkToChat,
   pathItemActionMenu: PathItemActionMenu,
+  sendAttachmentToChat: SendAttachmentToChat,
 }
 export type State = I.RecordOf<_State>
 
