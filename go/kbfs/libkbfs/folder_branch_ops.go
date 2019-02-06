@@ -700,10 +700,15 @@ func (fbo *folderBranchOps) clearConflictView(ctx context.Context) error {
 	//  so users can copy any unmerged files manually back into
 	//  their synced view before nuking it.
 
-	// TODO: I'm probably forgetting something
-	// just having a way to automatically rename the journal directory,
-	// and resetting the FBO to have the synced view of the folder,
-	// will be good enough.
+	lState := makeFBOLockState()
+	fbo.mdWriterLock.Lock(lState)
+	defer fbo.mdWriterLock.Unlock(lState)
+
+	err := fbo.unstageLocked(ctx, lState, false)
+	if err != nil {
+		return err
+	}
+
 	journalServer, err := GetJournalServer(fbo.config)
 	if err != nil {
 		return err
@@ -722,9 +727,6 @@ func (fbo *folderBranchOps) clearConflictView(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	lState := makeFBOLockState()
-	fbo.mdWriterLock.Lock(lState)
-	defer fbo.mdWriterLock.Unlock(lState)
 	fbo.setBranchIDLocked(lState, kbfsmd.NullBranchID)
 	return nil
 }
@@ -6469,7 +6471,7 @@ func (fbo *folderBranchOps) undoUnmergedMDUpdatesLocked(
 }
 
 func (fbo *folderBranchOps) unstageLocked(ctx context.Context,
-	lState *lockState) error {
+	lState *lockState, doPrune bool) error {
 	fbo.mdWriterLock.AssertLocked(lState)
 
 	// fetch all of my unstaged updates, and undo them one at a time
@@ -6481,7 +6483,7 @@ func (fbo *folderBranchOps) unstageLocked(ctx context.Context,
 	}
 
 	// let the server know we no longer have need
-	if wasUnmergedBranch {
+	if wasUnmergedBranch && doPrune {
 		err = fbo.config.MDOps().PruneBranch(ctx, fbo.id(), unmergedBID)
 		if err != nil {
 			return err
@@ -6554,7 +6556,7 @@ func (fbo *folderBranchOps) UnstageForTesting(
 			lState := makeFBOLockState()
 			c <- fbo.doMDWriteWithRetry(ctx, lState,
 				func(lState *lockState) error {
-					return fbo.unstageLocked(freshCtx, lState)
+					return fbo.unstageLocked(freshCtx, lState, true)
 				})
 		}()
 
@@ -7528,7 +7530,7 @@ func (fbo *folderBranchOps) unstageAfterFailedResolution(ctx context.Context,
 	ctx = newLinkedContext(ctx)
 	fbo.log.CWarningf(ctx, "Unstaging branch %s after a resolution failure",
 		fbo.unmergedBID)
-	return fbo.unstageLocked(ctx, lState)
+	return fbo.unstageLocked(ctx, lState, true)
 }
 
 func (fbo *folderBranchOps) handleTLFBranchChange(ctx context.Context,
