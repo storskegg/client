@@ -563,7 +563,7 @@ func (fbo *folderBranchOps) DeleteFavorite(ctx context.Context,
 }
 
 func (fbo *folderBranchOps) AddFavorite(ctx context.Context,
-	fav Favorite) error {
+	fav Favorite, data favoriteData) error {
 	return errors.New("AddFavorite is not supported by folderBranchOps")
 }
 
