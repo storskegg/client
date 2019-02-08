@@ -2206,3 +2206,14 @@ func (k *SimpleFS) SimpleFSSetFolderSyncConfig(
 	_, err = k.config.KBFSOps().SetSyncConfig(ctx, tlfID, arg.Config)
 	return err
 }
+
+// SimpleFSClearConflictState implements the SimpleFS interface.
+func (k *SimpleFS) SimpleFSClearConflictState(ctx context.Context,
+	path keybase1.Path) error {
+	// TODO: there's got to be a better way to get a TLF ID
+	tlfID, _, err := k.getSyncConfig(ctx, path)
+	if err != nil {
+		return err
+	}
+	return k.config.KBFSOps().ClearConflictView(ctx, tlfID)
+}
